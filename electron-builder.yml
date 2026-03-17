@@ -1,6 +1,6 @@
-appId: com.aivoclaw.app
-productName: AivoClaw
-copyright: Copyright © 2025 AivoClaw
+appId: com.aivoclaw-ce.app
+productName: AivoClaw CE
+copyright: Copyright © 2025 AivoClaw CE
 
 directories:
   output: out
@@ -25,7 +25,7 @@ mac:
   category: public.app-category.productivity
   # zip artifactName 含 arch + -mac 后缀，供 electron-updater findFile 按架构匹配
   # dmg.artifactName 会覆盖 DMG 的命名
-  artifactName: "AivoClaw-${version}-${arch}-mac.${ext}"
+  artifactName: "AivoClaw-CE-${version}-${arch}-mac.${ext}"
   # 签名身份由 CSC_NAME 环境变量指定（见 .env），避免把证书名写入仓库
   hardenedRuntime: true
   gatekeeperAssess: false
@@ -40,7 +40,7 @@ dmg:
   sign: false
   # 关闭 DMG 差分更新元数据，避免生成 .dmg.blockmap
   writeUpdateInfo: false
-  artifactName: "AivoClaw-${version}-${arch}.${ext}"
+  artifactName: "AivoClaw-CE-${version}-${arch}.${ext}"
 
 # --- Windows ---
 win:
@@ -55,4 +55,4 @@ nsis:
   runAfterFinish: true
   # 关闭 NSIS 差分包，避免生成 .exe.blockmap
   differentialPackage: false
-  artifactName: "AivoClaw-Setup-${version}-${arch}.${ext}"
+  artifactName: "AivoClaw-CE-Setup-${version}-${arch}.${ext}"

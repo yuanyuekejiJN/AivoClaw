@@ -27,12 +27,12 @@ const FALLBACK_SHARE_COPY_PAYLOAD: ShareCopyPayload = {
   version: 1,
   locales: {
     zh: {
-      title: "分享 AivoClaw 给朋友",
+      title: "分享 AivoClaw CE 给朋友",
       subtitle: "复制下面这段文案分享给你的朋友或群聊，作者会非常感谢你哟😘",
       body: [
-        "我最近在用 AivoClaw，很快就安装好了 OpenClaw。",
+        "我最近在用 AivoClaw CE，很快就安装好了 OpenClaw。",
         "",
-        "AivoClaw 是 OpenClaw 的一键安装包，几分钟就能装好并开始用。",
+        "AivoClaw CE 是 OpenClaw 的一键安装包，几分钟就能装好并开始用。",
         "",
         "他们说 OpenClaw 可以做这些事：",
         "• 浏览器操作：自动搜索浏览、定时信息抓取、处理汇总",
@@ -45,13 +45,13 @@ const FALLBACK_SHARE_COPY_PAYLOAD: ShareCopyPayload = {
       ].join("\n"),
     },
     en: {
-      title: "Share AivoClaw with friends",
+      title: "Share AivoClaw CE with friends",
       subtitle:
         "Copy this text and share it with your friends or group chats. The creator will really appreciate it 😘",
       body: [
-        "I've been using AivoClaw lately, and it seriously boosts execution speed.",
+        "I've been using AivoClaw CE lately, and it seriously boosts execution speed.",
         "",
-        "AivoClaw is a one-click installer for OpenClaw, so you can get started in minutes.",
+        "AivoClaw CE is a one-click installer for OpenClaw, so you can get started in minutes.",
         "",
         "What OpenClaw can do:",
         "• Browser automation: auto search and browsing, scheduled information capture, and summary processing",

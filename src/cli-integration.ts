@@ -25,7 +25,7 @@ type WinCliBinDirs = {
 };
 
 // Wrapper 脚本中的标记字符串，用于识别由 AivoClaw 生成的文件。
-const CLI_MARKER = "AivoClaw CLI";
+const CLI_MARKER = "AivoClaw CE CLI";
 
 // rc 注入块标记，安装可幂等覆盖，卸载可精确移除。
 const RC_BLOCK_START = "# >>> aivoclaw-cli >>>";
@@ -57,7 +57,7 @@ function getWinLocalAppDataDir(): string {
 // 解析 Windows 当前路径与旧版迁移路径，避免老用户 PATH 残留。
 export function resolveWinCliBinDirsForPaths(localAppDataDir: string, userStateDir: string): WinCliBinDirs {
   return {
-    currentBinDir: path.win32.join(localAppDataDir, "AivoClaw", "bin"),
+    currentBinDir: path.win32.join(localAppDataDir, "AivoClaw CE", "bin"),
     legacyBinDirs: [path.win32.join(userStateDir, "bin")],
   };
 }
@@ -204,11 +204,11 @@ export function buildPosixWrapperForPaths(nodeBin: string, entry: string): strin
     `APP_NODE="${safeNodeBin}"`,
     `APP_ENTRY="${safeEntry}"`,
     'if [ ! -f "$APP_NODE" ]; then',
-    '  echo "Error: AivoClaw not found at $APP_NODE" >&2',
+    '  echo "Error: AivoClaw CE not found at $APP_NODE" >&2',
     "  exit 127",
     "fi",
     'if [ ! -f "$APP_ENTRY" ]; then',
-    '  echo "Error: AivoClaw entry not found at $APP_ENTRY" >&2',
+    '  echo "Error: AivoClaw CE entry not found at $APP_ENTRY" >&2',
     "  exit 127",
     "fi",
     "export ELECTRON_RUN_AS_NODE=1",
@@ -235,11 +235,11 @@ export function buildWinWrapperForPaths(nodeBin: string, entry: string): string 
     `set "APP_NODE=${safeNodeBin}"`,
     `set "APP_ENTRY=${safeEntry}"`,
     'if not exist "%APP_NODE%" (',
-    "  echo Error: AivoClaw Node runtime not found. 1>&2",
+    "  echo Error: AivoClaw CE Node runtime not found. 1>&2",
     "  exit /b 127",
     ")",
     'if not exist "%APP_ENTRY%" (',
-    "  echo Error: AivoClaw entry not found. 1>&2",
+    "  echo Error: AivoClaw CE entry not found. 1>&2",
     "  exit /b 127",
     ")",
     'set "ELECTRON_RUN_AS_NODE=1"',

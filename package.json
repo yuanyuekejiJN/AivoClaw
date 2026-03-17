@@ -1,8 +1,8 @@
 {
-  "name": "AivoClaw",
+  "name": "aivoclaw-ce",
   "version": "2026.3.13",
   "private": true,
-  "description": "AivoClaw desktop app — cross-platform Electron shell for openclaw",
+  "description": "AivoClaw CE desktop app — cross-platform Electron shell for openclaw",
   "main": "dist/main.js",
   "scripts": {
     "generate:settings-icons": "node scripts/generate-settings-icons.js",

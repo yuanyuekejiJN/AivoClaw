@@ -79,9 +79,9 @@ export function renderSettingsAbout(app: SettingsAppState) {
   return html`
     <section class="settings-about-page">
       <div class="settings-about-header">
-        <img src="${aivologo}" alt="AivoClaw" class="settings-about-icon">
+        <img src="${aivologo}" alt="AivoClaw CE" class="settings-about-icon">
         <div class="settings-about-heading">
-          <h1 class="settings-page-title" style="font-size:20px;">AivoClaw</h1>
+          <h1 class="settings-page-title" style="font-size:20px;">AivoClaw CE</h1>
           <div class="settings-about-version">Version ${version}</div>
         </div>
       </div>
@@ -118,7 +118,7 @@ export function renderSettingsAbout(app: SettingsAppState) {
           <div class="settings-surface-copy" style="flex:1;">
             <div class="settings-surface-title">版本信息</div>
             <div class="settings-surface-hint">
-              AivoClaw ${version}
+              AivoClaw CE ${version}
             </div>
           </div>
           <button class="settings-button settings-button-secondary"
@@ -150,7 +150,7 @@ export function renderSettingsAbout(app: SettingsAppState) {
       )}
 
       <div class="settings-about-footer">
-        &copy; 2026 AivoClaw Team
+        &copy; 2026 AivoClaw CE Team
       </div>
     </section>
   `;

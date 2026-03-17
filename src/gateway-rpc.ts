@@ -69,7 +69,7 @@ export function callGatewayRpc(
           params: {
             minProtocol: 3,
             maxProtocol: 3,
-            client: { id: "gateway-client", displayName: "AivoClaw", version: "1.0", platform: process.platform, mode: "backend" },
+            client: { id: "gateway-client", displayName: "AivoClaw CE", version: "1.0", platform: process.platform, mode: "backend" },
             auth: { token },
             role: "operator",
             scopes: ["operator.admin"],

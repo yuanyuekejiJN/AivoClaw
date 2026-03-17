@@ -41,20 +41,20 @@ const I18N: Record<string, TrayStrings> = {
     stopGateway: "Stop Gateway",
     settings: "Settings",
     checkUpdates: "Check for Updates",
-    quit: "Quit AivoClaw",
+    quit: "Quit AivoClaw CE",
   },
   zh: {
     stateRunning: "Gateway: 运行中",
     stateStarting: "Gateway: 启动中…",
     stateStopping: "Gateway: 停止中…",
     stateStopped: "Gateway: 已停止",
-    openDashboard: "打开 AivoClaw",
+    openDashboard: "打开 AivoClaw CE",
     restartGateway: "重启 Gateway",
     startGateway: "启动 Gateway",
     stopGateway: "停止 Gateway",
     settings: "设置",
     checkUpdates: "检查更新",
-    quit: "退出 AivoClaw",
+    quit: "退出 AivoClaw CE",
   },
 };
 
@@ -98,7 +98,7 @@ export class TrayManager {
     }
 
     this.tray = new Tray(icon);
-    this.tray.setToolTip("AivoClaw");
+    this.tray.setToolTip("AivoClaw CE");
 
     // 点击托盘图标 → 打开主窗口
     this.tray.on("click", () => {

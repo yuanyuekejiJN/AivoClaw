@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc)",
+      "Bash(del:*)",
+      "Bash(npx vite:*)",
+      "Bash(tr:*)",
+      "Bash(sed:*)",
+      "Bash(npx tsc:*)",
+      "Bash(do echo:*)",
+      "Bash(grep:*)",
+      "Bash(python:*)",
+      "Bash(pip show:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

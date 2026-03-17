@@ -1,0 +1,283 @@
+# 自动构建 + 发布工作流
+# 触发：推送 v* 标签（如 git tag v2026.2.10 && git push --tags）
+# 流程：4 并行构建 → 合并 yml → 上传 OSS → 刷新 CDN → 创建 GitHub Release
+
+name: Build & Release
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:       # PR 触发构建验证（不发布）
+  workflow_dispatch:  # 允许在任意分支上手动触发构建（不发布）
+
+# package-resources.js 使用 OPENCLAW_PACKAGE_SOURCE 固定 openclaw 版本
+env:
+  OPENCLAW_PACKAGE_SOURCE: "2026.3.2"
+  ARTIFACT_RETENTION_DAYS: 3
+  # 埋点配置
+  AIVOCLAW_ANALYTICS_API_KEY: ${{ secrets.AIVOCLAW_ANALYTICS_API_KEY }}
+  AIVOCLAW_ANALYTICS_CAPTURE_URL: ${{ secrets.AIVOCLAW_ANALYTICS_CAPTURE_URL }}
+  AIVOCLAW_ANALYTICS_CAPTURE_FALLBACK_URL: ${{ secrets.AIVOCLAW_ANALYTICS_CAPTURE_FALLBACK_URL }}
+
+jobs:
+  # ── macOS arm64：签名 + 公证 ──
+  build-mac-arm64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      # TypeScript 编译（dist:* 脚本不含 tsc）
+      - run: npm run build
+
+      # 导入签名证书到临时 keychain
+      - name: 导入 macOS 签名证书
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          echo "$CSC_LINK" | base64 -d > /tmp/cert.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import /tmp/cert.p12 -k build.keychain -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+          rm /tmp/cert.p12
+
+      # 写入 Apple API Key 供公证使用
+      - name: 准备 Apple 公证密钥
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$APPLE_API_KEY" > ~/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
+
+      # 构建 macOS arm64（签名 + 公证）
+      # APPLE_API_KEY 必须是 .p8 文件路径（notarytool --key 要求），不是文件内容
+      - name: 构建 macOS arm64
+        env:
+          AIVOCLAW_MAC_SIGN_AND_NOTARIZE: "true"
+          CSC_NAME: ${{ secrets.CSC_NAME }}
+          CSC_KEYCHAIN: build.keychain
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          export APPLE_API_KEY="$HOME/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8"
+          npm run dist:mac:arm64
+
+      - name: 清理 blockmap（macOS arm64）
+        run: find out/darwin-arm64 -type f -name "*.blockmap" -delete
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-arm64
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          path: |
+            out/darwin-arm64/*.dmg
+            out/darwin-arm64/*.zip
+            out/darwin-arm64/latest-mac.yml
+
+  # ── macOS x64：签名 + 公证（在 arm64 runner 上交叉编译） ──
+  build-mac-x64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: 导入 macOS 签名证书
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          echo "$CSC_LINK" | base64 -d > /tmp/cert.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import /tmp/cert.p12 -k build.keychain -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+          rm /tmp/cert.p12
+
+      - name: 准备 Apple 公证密钥
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$APPLE_API_KEY" > ~/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
+
+      - name: 构建 macOS x64
+        env:
+          AIVOCLAW_MAC_SIGN_AND_NOTARIZE: "true"
+          CSC_NAME: ${{ secrets.CSC_NAME }}
+          CSC_KEYCHAIN: build.keychain
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          export APPLE_API_KEY="$HOME/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8"
+          npm run dist:mac:x64
+
+      - name: 清理 blockmap（macOS x64）
+        run: find out/darwin-x64 -type f -name "*.blockmap" -delete
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-x64
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          path: |
+            out/darwin-x64/*.dmg
+            out/darwin-x64/*.zip
+            out/darwin-x64/latest-mac.yml
+
+  # ── Windows x64 ──
+  build-win-x64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # npm 在 Windows 默认用 cmd.exe 跑 scripts，package.json 里的 ENV=val 语法是 bash 专属
+      - name: 让 npm 通过 bash 执行 scripts
+        run: npm config set script-shell "$(which bash)"
+
+      - name: 构建 Windows x64
+        run: npm run dist:win:x64
+
+      - name: 清理 blockmap（Windows x64）
+        run: find out/win32-x64 -type f -name "*.blockmap" -delete
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-x64
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          path: |
+            out/win32-x64/*.exe
+            out/win32-x64/latest.yml
+
+  # ── Windows arm64 ──
+  build-win-arm64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # npm 在 Windows 默认用 cmd.exe 跑 scripts
+      - name: 让 npm 通过 bash 执行 scripts
+        run: npm config set script-shell "$(which bash)"
+
+      - name: 构建 Windows arm64
+        run: npm run dist:win:arm64
+
+      - name: 清理 blockmap（Windows arm64）
+        run: find out/win32-arm64 -type f -name "*.blockmap" -delete
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-arm64
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          path: |
+            out/win32-arm64/*.exe
+            out/win32-arm64/latest.yml
+
+  # ── 合并 + 上传 OSS + 刷新 CDN + 创建 GitHub Release ──
+  release:
+    if: github.event_name == 'push'  # 仅 tag 推送时发布，手动触发只构建不发布
+    needs: [build-mac-arm64, build-mac-x64, build-win-x64, build-win-arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 下载四个平台的构建产物到对应目录
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-arm64
+          path: out/darwin-arm64
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-x64
+          path: out/darwin-x64
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: win-x64
+          path: out/win32-x64
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: win-arm64
+          path: out/win32-arm64
+
+      # 安装 js-yaml（merge 脚本依赖）
+      - run: npm install js-yaml
+
+      # 合并多架构 yml + 收集产物
+      - name: 合并发布文件
+        run: node scripts/merge-release-yml.js
+
+      - name: 二次清理 blockmap（release）
+        run: find out -type f -name "*.blockmap" -delete
+
+      # 预上传二进制产物到 OSS（不含 latest yml，用户不会收到更新推送）
+      - name: 安装 ossutil
+        continue-on-error: true
+        id: ossutil
+        run: curl -fsSL https://gosspublic.alicdn.com/ossutil/install.sh | sudo bash
+
+      - name: 预上传产物到 OSS（不含 latest yml）
+        if: steps.ossutil.outcome == 'success'
+        continue-on-error: true
+        env:
+          ALIYUN_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          ALIYUN_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        run: |
+          ossutil config -e oss-cn-beijing.aliyuncs.com -i "$ALIYUN_ACCESS_KEY_ID" -k "$ALIYUN_ACCESS_KEY_SECRET"
+          ossutil cp -r out/release/ oss://aivoclaw/releases/ --force --exclude "*.yml"
+          echo "产物预上传完成（不含 latest yml）"
+
+      # 创建 GitHub Release（草稿模式，手动确认后发布）
+      # 发布 Release 后由 publish-release.yml 上传 latest yml + 刷新 CDN
+      - name: 创建 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/release/*
+          draft: true
+          generate_release_notes: true

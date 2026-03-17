@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:;">
+  <title>AivoClaw</title>
+  <link rel="stylesheet" href="setup.css">
+</head>
+<body>
+
+  <!-- 进度指示器 -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- 步骤容器 -->
+  <div class="steps-container" id="stepsContainer">
+
+    <!-- Step 0: 环境检测（冲突时显示） -->
+    <section class="step" id="step0">
+      <div class="step-content step0-content">
+        <div class="logo-area">
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+            <rect width="56" height="56" rx="14" fill="#e67e22"/>
+            <path d="M28 16L28 32" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="28" cy="38" r="2" fill="white"/>
+          </svg>
+        </div>
+        <h1 data-i18n="conflict.title">Existing OpenClaw Detected</h1>
+        <p class="subtitle" data-i18n="conflict.subtitle">An existing OpenClaw installation was found on your system. This may cause port conflicts.</p>
+        <p class="conflict-reassure" data-i18n="conflict.reassure">Your personas and chat history will be preserved.</p>
+
+        <div class="conflict-details" id="conflictDetails">
+          <div class="conflict-item hidden" id="conflictPort">
+            <span class="conflict-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6" stroke="#e67e22" stroke-width="1.5"/>
+                <path d="M8 5V9M8 11V11.01" stroke="#e67e22" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span id="conflictPortText"></span>
+          </div>
+          <div class="conflict-item hidden" id="conflictGlobal">
+            <span class="conflict-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6" stroke="#e67e22" stroke-width="1.5"/>
+                <path d="M8 5V9M8 11V11.01" stroke="#e67e22" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span id="conflictGlobalText"></span>
+          </div>
+        </div>
+
+        <div class="error-msg hidden" id="conflictError"></div>
+
+        <div class="conflict-actions">
+          <button class="btn-primary" id="btnUninstall">
+            <span class="btn-text" data-i18n="conflict.uninstall">Uninstall old version & continue</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+          <button class="btn-secondary" id="btnQuitConflict" data-i18n="conflict.quit">Quit</button>
+        </div>
+
+        <div class="status-msg hidden" id="conflictStatus"></div>
+      </div>
+    </section>
+
+    <!-- Step 1: 欢迎页 -->
+    <section class="step active" id="step1">
+      <div class="step-content step1-content">
+        <div class="logo-area">
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+            <rect width="56" height="56" rx="14" fill="#c0392b"/>
+            <path d="M18 28C18 22.477 22.477 18 28 18C33.523 18 38 22.477 38 28C38 33.523 33.523 38 28 38" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="28" cy="28" r="4" fill="white"/>
+            <path d="M20 36L16 40" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 data-i18n="welcome.title">Welcome to AivoClaw</h1>
+        <p class="subtitle" data-i18n="welcome.subtitle">AivoClaw is a one-click installer for OpenClaw. Ready to use out of the box.</p>
+
+        <ul class="welcome-features">
+          <li>
+            <span class="welcome-feature-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 4.5H15M3 9H15M3 13.5H9" stroke="#c0392b" stroke-width="1.3" stroke-linecap="round"/></svg>
+            </span>
+            <span data-i18n="welcome.feat1">Chat with top language models like Claude, GPT, Kimi, Gemini</span>
+          </li>
+          <li>
+            <span class="welcome-feature-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 4H15M3 8H10M3 12H13" stroke="#c0392b" stroke-width="1.3" stroke-linecap="round"/></svg>
+            </span>
+            <span data-i18n="welcome.feat2">Follow instructions to access files on your computer and automate tasks</span>
+          </li>
+          <li>
+            <span class="welcome-feature-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2.5 4.5C2.5 3.67 3.17 3 4 3H14C14.83 3 15.5 3.67 15.5 4.5V11.5C15.5 12.33 14.83 13 14 13H10L6.5 15.5V13H4C3.17 13 2.5 12.33 2.5 11.5V4.5Z" stroke="#c0392b" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span data-i18n="welcome.feat3">Connect to Feishu, WeCom, DingTalk, QQ Bot</span>
+          </li>
+          <li>
+            <span class="welcome-feature-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 1.5L2.5 5V13L9 16.5L15.5 13V5L9 1.5Z" stroke="#c0392b" stroke-width="1.3"/>
+                <path d="M9 8V12M9 6V6.01" stroke="#c0392b" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span data-i18n="welcome.security">API keys stored locally, never sent to third-party servers</span>
+          </li>
+        </ul>
+
+        <button class="btn-primary" id="btnToStep2" data-i18n="welcome.next">Next</button>
+      </div>
+    </section>
+
+    <!-- Step 2: Provider 配置 -->
+    <section class="step" id="step2">
+      <div class="step-content">
+        <h2 data-i18n="config.title">Configure Provider</h2>
+        <p class="subtitle" data-i18n="config.subtitle">Choose your LLM provider and enter your API key.</p>
+
+        <div class="info-card info-card-compact">
+          <div class="info-card-icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7" stroke="#c0392b" stroke-width="1.3"/>
+              <path d="M8.25 5.63h1.5v1.5h-1.5zM8.25 8.63h1.5v3.75h-1.5z" fill="#c0392b"/>
+            </svg>
+          </div>
+          <div class="info-card-text">
+            <span data-i18n="config.keyNotice">AivoClaw does not provide API keys. Please click the link to purchase one from the provider's website.</span>
+          </div>
+        </div>
+
+        <p class="docs-link-row"><a href="#" class="platform-link" id="docsLink" data-i18n="config.docsLink">Tutorial Docs →</a></p>
+
+        <!-- Provider 分段选择器 -->
+        <div class="provider-tabs" id="providerTabs">
+          <button class="provider-tab active" data-provider="moonshot">Kimi</button>
+          <button class="provider-tab" data-provider="anthropic">Anthropic</button>
+          <button class="provider-tab" data-provider="openai">OpenAI</button>
+          <button class="provider-tab" data-provider="google">Google</button>
+          <button class="provider-tab" data-provider="custom" data-i18n="config.custom">Custom</button>
+        </div>
+
+        <!-- Moonshot 子平台选择 -->
+        <div class="field-group hidden" id="subPlatformGroup">
+          <label data-i18n="config.platform">Platform</label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="subPlatform" value="kimi-code" checked>
+              <span>Kimi 会员订阅</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="subPlatform" value="moonshot-cn">
+              <span>Moonshot CN（中国）</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="subPlatform" value="moonshot-ai">
+              <span>Moonshot AI（Global）</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Custom: 预设选择 -->
+        <div class="field-group hidden" id="customPresetGroup">
+          <label data-i18n="config.preset">Preset</label>
+          <select id="customPreset">
+            <option value="" data-i18n="config.presetManual">Manual</option>
+            <option value="minimax">MiniMax (Global)</option>
+            <option value="minimax-cn">MiniMax (中国)</option>
+            <option value="zai-global">Z.AI</option>
+            <option value="zai-cn">智谱</option>
+            <option value="zai-cn-coding">智谱 CodingPlan</option>
+            <option value="volcengine">火山引擎</option>
+            <option value="volcengine-coding">火山引擎 CodingPlan</option>
+            <option value="qwen">阿里云百炼</option>
+            <option value="qwen-coding">阿里云百炼 CodingPlan</option>
+          </select>
+        </div>
+
+        <!-- Custom: Base URL -->
+        <div class="field-group hidden" id="baseURLGroup">
+          <label for="baseURL" data-i18n="config.baseUrl">Base URL</label>
+          <input type="url" id="baseURL" placeholder="https://api.example.com/v1" autocomplete="off">
+        </div>
+
+        <!-- API Key 输入 -->
+        <div class="field-group">
+          <div class="label-row">
+            <label for="apiKey" data-i18n="config.apiKey">API Key</label>
+            <a href="#" class="platform-link" id="platformLink">Get API Key →</a>
+          </div>
+          <div class="input-password-wrap">
+            <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+            <button class="btn-toggle-vis" id="btnToggleKey" type="button" title="Toggle visibility">
+              <svg class="icon-eye" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M1.5 9C1.5 9 4 3.75 9 3.75C14 3.75 16.5 9 16.5 9C16.5 9 14 14.25 9 14.25C4 14.25 1.5 9 1.5 9Z" stroke="currentColor" stroke-width="1.3"/>
+                <circle cx="9" cy="9" r="2.25" stroke="currentColor" stroke-width="1.3"/>
+              </svg>
+              <svg class="icon-eye-off hidden" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M2.5 2.5L15.5 15.5M7.05 7.05A2.25 2.25 0 0010.95 10.95M1.5 9C1.5 9 4 3.75 9 3.75C10.2 3.75 11.3 4.1 12.25 4.6M16.5 9C16.5 9 14 14.25 9 14.25C7.8 14.25 6.7 13.9 5.75 13.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 模型选择（非 Custom） -->
+        <div class="field-group" id="modelSelectGroup">
+          <label for="modelSelect" data-i18n="config.model">Model</label>
+          <select id="modelSelect"></select>
+        </div>
+
+        <!-- Custom 预设: 自定义模型（选择"自定义模型"时显示） -->
+        <div class="field-group hidden" id="customModelInputGroup">
+          <label for="customModelInput" data-i18n="config.customModelId">Custom Model ID</label>
+          <input type="text" id="customModelInput" placeholder="e.g. my-model-id" autocomplete="off">
+        </div>
+
+        <!-- Custom: Model ID 手动输入 -->
+        <div class="field-group hidden" id="modelInputGroup">
+          <label for="modelInput" data-i18n="config.modelId">Model ID</label>
+          <input type="text" id="modelInput" placeholder="e.g. my-custom-model" autocomplete="off">
+        </div>
+
+        <!-- Custom: API Type -->
+        <div class="field-group hidden" id="apiTypeGroup">
+          <label data-i18n="config.apiType">API Type</label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="apiType" value="openai-completions" checked>
+              <span>OpenAI Completions</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="apiType" value="anthropic-messages">
+              <span>Anthropic Messages</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="apiType" value="openai-responses">
+              <span>OpenAI Responses</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Custom: 图片支持 -->
+        <div class="field-group hidden" id="imageSupportGroup">
+          <label class="checkbox-item">
+            <input type="checkbox" id="imageSupport" checked>
+            <span data-i18n="config.imageSupport">Model supports image input</span>
+          </label>
+        </div>
+
+        <!-- 错误信息 -->
+        <div class="error-msg hidden" id="errorMsg"></div>
+
+        <!-- 操作按钮 -->
+        <div class="btn-row">
+          <button class="btn-secondary" id="btnBackToStep1" data-i18n="config.back">Back</button>
+          <button class="btn-primary" id="btnVerify">
+            <span class="btn-text" data-i18n="config.verify">Verify &amp; Continue</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: 完成 -->
+    <section class="step" id="step3">
+      <div class="step-content">
+        <div class="logo-area">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="22" stroke="#c0392b" stroke-width="2.5"/>
+            <path d="M15 24L21 30L33 18" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1 data-i18n="done.title">All Set!</h1>
+        <p class="subtitle" data-i18n="done.subtitle">AivoClaw is ready. Here's what you can do:</p>
+
+        <ul class="feature-list">
+          <li>
+            <span class="feature-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M3 5H17M3 10H17M3 15H10" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span data-i18n="done.feature1">Chat with state-of-the-art language models</span>
+          </li>
+          <li>
+            <span class="feature-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6 4L14 10L6 16V4Z" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span data-i18n="done.feature2">Generate and execute code in real time</span>
+          </li>
+          <li>
+            <span class="feature-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect x="3" y="3" width="14" height="14" rx="2" stroke="#c0392b" stroke-width="1.5"/>
+                <path d="M7 10H13M10 7V13" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span data-i18n="done.feature3">Manage multiple conversations and contexts</span>
+          </li>
+          <li>
+            <span class="feature-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="7" stroke="#c0392b" stroke-width="1.5"/>
+                <path d="M10 6V10L13 13" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span data-i18n="done.feature4">Switch providers or models anytime in Settings</span>
+          </li>
+        </ul>
+
+        <div class="toggle-row">
+          <span class="toggle-label" data-i18n="done.sessionMemory">Auto-save session memory on /new</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="sessionMemoryEnabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row hidden" id="launchAtLoginRow">
+          <span class="toggle-label" data-i18n="done.launchAtLogin">Launch at login</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="launchAtLoginEnabled">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label" data-i18n="done.installCli">Add openclaw command to terminal PATH</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="installCliCheck" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <button class="btn-primary" id="btnStart">
+          <span class="btn-text" data-i18n="done.start">Start AivoClaw</span>
+          <span class="btn-spinner hidden" id="btnStartSpinner"></span>
+        </button>
+        <div class="status-msg hidden" id="doneStatus"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="setup.js"></script>
+</body>
+</html>

@@ -18,12 +18,12 @@ run() {
   fi
 }
 
-BUNDLE_ID="com.aivoclaw.app"
+BUNDLE_ID="com.aivoclaw-ce.app"
 
 # 终止 AivoClaw 进程（包括 Electron 主进程和 gateway 子进程）
 echo "终止 AivoClaw 进程"
-run killall AivoClaw 2>/dev/null || true
-run killall -9 AivoClaw 2>/dev/null || true
+run killall "AivoClaw CE" 2>/dev/null || true
+run killall -9 "AivoClaw CE" 2>/dev/null || true
 sleep 0.5
 
 # 清理 Electron UserDefaults / 应用缓存

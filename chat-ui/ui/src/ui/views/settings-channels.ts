@@ -65,7 +65,7 @@ export function renderSettingsChannels(app: SettingsAppState) {
       <header class="settings-channels-header">
         <div>
           <h1 class="settings-channels-title">IM 通道</h1>
-          <div class="settings-channels-desc">将 AivoClaw 连接到飞书、企业微信、钉钉、QQ Bot 等即时通讯平台。</div>
+          <div class="settings-channels-desc">将 AivoClaw CE 连接到飞书、企业微信、钉钉、QQ Bot 等即时通讯平台。</div>
         </div>
         <div class="settings-channels-header-actions">
           <button class="channels-btn channels-btn-icon" title="刷新"

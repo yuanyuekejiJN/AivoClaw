@@ -90,7 +90,7 @@ export function renderSettingsGeneral(app: SettingsAppState) {
             <div class="settings-general-label">开机自启</div>
             <div class="settings-general-hint">
               ${app.launchAtLoginSupported
-                ? "系统启动时自动运行 AivoClaw"
+                ? "系统启动时自动运行 AivoClaw CE"
                 : "当前系统不支持此功能"}
             </div>
           </div>

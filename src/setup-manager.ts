@@ -17,7 +17,7 @@ export class SetupManager {
   showSetup(): void {
     // 标题本地化
     const lang = app.getLocale().startsWith("zh") ? "zh" : "en";
-    const title = lang === "zh" ? "AivoClaw 安装引导" : "AivoClaw Setup";
+    const title = lang === "zh" ? "AivoClaw CE 安装引导" : "AivoClaw CE Setup";
 
     this.setupWin = new BrowserWindow({
       width: 580,

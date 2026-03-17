@@ -9,10 +9,10 @@ export type Locale = "zh" | "en";
 const dict: Record<Locale, Record<string, string>> = {
   zh: {
     // App
-    "app.windowTitle": "AivoClaw 一键安装OpenClaw",
+    "app.windowTitle": "AivoClaw CE 一键安装OpenClaw",
 
     // Sidebar
-    "sidebar.brand": "AivoClaw",
+    "sidebar.brand": "AivoClaw CE",
     "sidebar.newChat": "新建对话",
     "sidebar.settings": "设置",
     "sidebar.docs": "教程文档",
@@ -116,7 +116,7 @@ const dict: Record<Locale, Record<string, string>> = {
     "chat.attachmentPreview": "图片预览",
 
     // Share prompt
-    "sharePrompt.title": "分享 AivoClaw 给朋友",
+    "sharePrompt.title": "分享 AivoClaw CE 给朋友",
     "sharePrompt.subtitle": "复制下面这段文案分享给你的朋友或群聊，作者会非常感谢你哟😘",
     "sharePrompt.copy": "复制文案",
     "sharePrompt.copied": "已复制",
@@ -163,10 +163,10 @@ const dict: Record<Locale, Record<string, string>> = {
   },
   en: {
     // App
-    "app.windowTitle": "AivoClaw - One-click installer for OpenClaw",
+    "app.windowTitle": "AivoClaw CE - One-click installer for OpenClaw",
 
     // Sidebar
-    "sidebar.brand": "AivoClaw",
+    "sidebar.brand": "AivoClaw CE",
     "sidebar.newChat": "New Chat",
     "sidebar.settings": "Settings",
     "sidebar.docs": "Docs",
@@ -271,7 +271,7 @@ const dict: Record<Locale, Record<string, string>> = {
     "chat.attachmentPreview": "Attachment preview",
 
     // Share prompt
-    "sharePrompt.title": "Share AivoClaw with friends",
+    "sharePrompt.title": "Share AivoClaw CE with friends",
     "sharePrompt.subtitle":
       "Copy this text and share it with your friends or group chats. The creator will really appreciate it 😘",
     "sharePrompt.copy": "Copy text",

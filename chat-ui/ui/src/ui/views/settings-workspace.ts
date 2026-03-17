@@ -17,11 +17,11 @@ export function renderSettingsWorkspace(_app: SettingsAppState) {
         <div class="settings-surface-head">
           <div class="settings-surface-copy">
             <div class="settings-surface-title">默认项目目录</div>
-            <div class="settings-surface-hint">AivoClaw 项目和上下文文件的保存位置。</div>
+            <div class="settings-surface-hint">AivoClaw CE 项目和上下文文件的保存位置。</div>
           </div>
         </div>
         <div class="settings-inline-fields settings-inline-fields-row">
-          <input class="settings-input" value="~/Documents/AivoClaw">
+          <input class="settings-input" value="~/Documents/AivoClaw CE">
           <button class="settings-button settings-button-secondary">${iconFolderOpen("icon-sm")} 浏览</button>
         </div>
       </div>
@@ -36,7 +36,7 @@ export function renderSettingsWorkspace(_app: SettingsAppState) {
         <div class="settings-general-row">
           <div class="settings-general-copy">
             <div class="settings-general-label">从 OpenClaw 迁移</div>
-            <div class="settings-general-hint">从 OpenClaw 导入配置、会话、技能和其他数据到 AivoClaw。</div>
+            <div class="settings-general-hint">从 OpenClaw 导入配置、会话、技能和其他数据到 AivoClaw CE。</div>
           </div>
           <button class="settings-button settings-button-secondary">开始迁移</button>
         </div>

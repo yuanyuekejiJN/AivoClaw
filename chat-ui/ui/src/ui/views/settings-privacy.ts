@@ -9,7 +9,7 @@ export function renderSettingsPrivacy(_app: SettingsAppState) {
       <header class="settings-page-header">
         <div class="settings-page-heading-group">
           <h1 class="settings-page-title">数据与隐私</h1>
-          <div class="settings-page-description">查看数据存储位置以及 AivoClaw 发出的网络请求。</div>
+          <div class="settings-page-description">查看数据存储位置以及 AivoClaw CE 发出的网络请求。</div>
         </div>
       </header>
 

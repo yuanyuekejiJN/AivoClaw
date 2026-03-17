@@ -4128,6 +4128,17 @@ img.chat-avatar {
   font-size: 13px;
   line-height: 1.6;
   color: var(--theme-text);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.sidebar-markdown pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 /* 卡片（上游 .card 通用类） */

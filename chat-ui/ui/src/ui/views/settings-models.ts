@@ -89,8 +89,8 @@ function getProviderLabel(provider: string, subPlatform: string): string {
  * API Key 掩码显示
  */
 function maskKey(key: string): string {
-  if (!key || key.length <= 8) return key ? "••••••••" : "未配置";
-  return key.slice(0, 4) + "••••" + key.slice(-4);
+  if (!key || key.length <= 8) return key ? "********" : "未配置";
+  return key.slice(0, 4) + "****" + key.slice(-4);
 }
 
 /**
@@ -422,7 +422,7 @@ export function renderSettingsModels(app: SettingsAppState) {
           </div>
           <div class="settings-models-flat-row">
             <span class="settings-models-flat-row-name">API Key</span>
-            <span style="color:var(--theme-text-sec);font-size:13px;font-family:monospace;">${currentKey}</span>
+            <span style="color:var(--theme-text-sec);font-size:13px;">${currentKey}</span>
           </div>
         </div>
       </div>

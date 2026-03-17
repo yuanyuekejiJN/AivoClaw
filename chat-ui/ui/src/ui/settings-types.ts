@@ -112,6 +112,8 @@ export interface SettingsAppState {
   gatewaySkills: GatewaySkillItem[];
   loadGatewaySkills: (() => Promise<GatewaySkillItem[]>) | null;
   toggleGatewaySkill: ((skillKey: string, enabled: boolean) => Promise<void>) | null;
+  saveGatewaySkillApiKey: ((skillKey: string, apiKey: string) => Promise<void>) | null;
+  skillApiKeyEdits: Record<string, string>;
   skillsBusyKey: string | null;
   skillsLoading: boolean;
   skillsLoaded: boolean;

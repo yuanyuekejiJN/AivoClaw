@@ -408,6 +408,8 @@ function getSettingsState(state: AppViewState): SettingsAppState {
       gatewaySkills: [],
       loadGatewaySkills: null,
       toggleGatewaySkill: null,
+      saveGatewaySkillApiKey: null,
+      skillApiKeyEdits: {},
       skillsBusyKey: null,
       skillsLoading: false,
       skillsLoaded: false,
@@ -456,6 +458,13 @@ function getSettingsState(state: AppViewState): SettingsAppState {
     const client = (state as any).client;
     if (!client || !(state as any).connected) return;
     await client.request("skills.update", { skillKey, enabled });
+  };
+
+  // 注入网关技能 API Key 保存回调
+  _settingsState.saveGatewaySkillApiKey = async (skillKey: string, apiKey: string) => {
+    const client = (state as any).client;
+    if (!client || !(state as any).connected) return;
+    await client.request("skills.update", { skillKey, apiKey });
   };
 
   return _settingsState;

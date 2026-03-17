@@ -16,8 +16,9 @@ import type { SkillhubItem } from "../settings-backend.ts";
 // 置顶关键词：匹配 slug/name/description 的技能排在最前面
 const PINNED_KEYWORDS = ["xiaohongshu", "xhs", "小红书"];
 
-function matchesPinnedKeywords(skill: { slug: string; name: string; description: string }): boolean {
-  const text = `${skill.slug}\x00${skill.name}\x00${skill.description}`.toLowerCase();
+function matchesPinnedKeywords(skill: { slug?: string; skillKey?: string; name: string; description: string }): boolean {
+  const id = skill.slug ?? skill.skillKey ?? "";
+  const text = `${id}\x00${skill.name}\x00${skill.description}`.toLowerCase();
   return PINNED_KEYWORDS.some((kw) => text.includes(kw.toLowerCase()));
 }
 
@@ -508,7 +509,14 @@ function renderBuiltInSkills(app: SettingsAppState) {
   }
 
   // 网关已连接：过滤掉技能商店安装的技能（openclaw-managed），仅显示内置技能
-  const builtInOnly = gatewaySkills.filter((s) => s.source !== "openclaw-managed");
+  const builtInOnly = gatewaySkills
+    .filter((s) => s.source !== "openclaw-managed")
+    .sort((a, b) => {
+      const ap = matchesPinnedKeywords(a) ? 0 : 1;
+      const bp = matchesPinnedKeywords(b) ? 0 : 1;
+      if (ap !== bp) return ap - bp;
+      return a.name.localeCompare(b.name);
+    });
   const totalCount = builtInOnly.length;
 
   return html`

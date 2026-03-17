@@ -173,6 +173,8 @@ export class GatewayProcess {
         OPENCLAW_GATEWAY_TOKEN: this.token,
         OPENCLAW_NPM_BIN: resolveNpmBin(),
         PATH: envPath,
+        // Windows 强制 UTF-8：让 gateway 子进程（工具调用）输出 UTF-8，避免 GBK 乱码
+        ...(IS_WIN ? { PYTHONUTF8: "1", LANG: "C.UTF-8" } : {}),
         ...this.extraEnv,
       },
       stdio: ["ignore", "pipe", "pipe"],

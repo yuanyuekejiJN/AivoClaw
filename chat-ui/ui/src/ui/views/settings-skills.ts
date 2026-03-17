@@ -162,6 +162,36 @@ async function handleStoreInstall(app: SettingsAppState, slug: string) {
 }
 
 /**
+ * 保存技能 API Key
+ */
+async function handleSaveSkillApiKey(app: SettingsAppState, skill: GatewaySkillItem) {
+  if (!app.saveGatewaySkillApiKey || app.skillsBusyKey) return;
+
+  const apiKey = (app.skillApiKeyEdits?.[skill.skillKey] ?? "").trim();
+  if (!apiKey) return;
+
+  app.skillsBusyKey = skill.skillKey;
+  app.requestUpdate();
+
+  try {
+    await app.saveGatewaySkillApiKey(skill.skillKey, apiKey);
+    // 保存成功后清空输入值并刷新技能列表
+    if (app.skillApiKeyEdits) {
+      delete app.skillApiKeyEdits[skill.skillKey];
+    }
+    if (app.loadGatewaySkills) {
+      const updated = await app.loadGatewaySkills();
+      app.gatewaySkills = updated;
+    }
+  } catch (err: any) {
+    alert(err?.message ?? "保存失败");
+  } finally {
+    app.skillsBusyKey = null;
+    app.requestUpdate();
+  }
+}
+
+/**
  * 切换技能的启用/禁用状态
  */
 async function handleToggleGatewaySkill(app: SettingsAppState, skill: GatewaySkillItem) {
@@ -417,6 +447,33 @@ function renderGatewaySkillRow(app: SettingsAppState, skill: GatewaySkillItem) {
             : nothing}
           ${missingItems.length > 0
             ? html`<div class="settings-skill-missing">缺失: ${missingItems.join("、")}</div>`
+            : nothing}
+          ${skill.primaryEnv
+            ? html`
+              <div class="settings-skill-apikey-row" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                <input
+                  type="password"
+                  class="settings-input"
+                  style="flex:1;max-width:320px;font-size:13px;padding:4px 8px;"
+                  placeholder=${skill.primaryEnv}
+                  .value=${app.skillApiKeyEdits?.[skill.skillKey] ?? ""}
+                  @input=${(e: Event) => {
+                    if (!app.skillApiKeyEdits) app.skillApiKeyEdits = {};
+                    app.skillApiKeyEdits[skill.skillKey] = (e.target as HTMLInputElement).value;
+                  }}
+                />
+                <button
+                  class="settings-button settings-button-primary"
+                  style="white-space:nowrap;padding:4px 12px;font-size:13px;"
+                  ?disabled=${busy || !(app.skillApiKeyEdits?.[skill.skillKey]?.trim())}
+                  @click=${() => void handleSaveSkillApiKey(app, skill)}
+                >
+                  ${busy
+                    ? html`${iconLoader("icon-sm icon-spin")} 保存中...`
+                    : "保存 Key"}
+                </button>
+              </div>
+            `
             : nothing}
         </div>
       </div>

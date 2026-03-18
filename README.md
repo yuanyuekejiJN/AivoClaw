@@ -213,23 +213,6 @@ AivoClaw 基于以下优秀的开源项目构建，感谢社区的贡献：
  </picture>
 </a>
 
-应用在用户目录下创建以下文件：
-
-```
-~/.openclaw/
-├── openclaw.json                    用户配置（模型、令牌、频道等）
-├── aivoclaw.config.json             AivoClaw 标识文件（设备 ID、安装时间）
-├── openclaw.last-known-good.json    最近一次成功启动的配置快照
-├── app.log                          应用日志
-├── gateway.log                      Gateway 子进程日志
-├── config-backups/                  配置滚动备份（最多 10 份）
-├── credentials/                     凭据存储
-│   └── kimi-search-api-key          Kimi Search API Key
-├── workspace/skills/                已安装的社区技能
-└── bin/
-    └── openclaw                     CLI 命令包装脚本
-```
-
 ## 许可证
 
 商业使用是允许的。如果你修改并分发本软件，或通过网络提供修改版本的服务，你必须在 AGPL v3 协议下公开相应的源代码。

@@ -1,0 +1,320 @@
+import { app, ipcMain } from "electron";
+import { ensureGatewayAuthTokenInConfig } from "./gateway-auth";
+import { SetupManager } from "./setup-manager";
+import * as analytics from "./analytics";
+import { getLaunchAtLoginState, setLaunchAtLoginEnabled } from "./launch-at-login";
+import {
+  PROVIDER_PRESETS,
+  MOONSHOT_SUB_PLATFORMS,
+  CUSTOM_PROVIDER_PRESETS,
+  verifyProvider,
+  buildProviderConfig,
+  saveMoonshotConfig,
+  readUserConfig,
+  writeUserConfig,
+} from "./provider-config";
+import * as log from "./logger";
+import { installCli, uninstallCli } from "./cli-integration";
+import { saveKimiSearchConfig } from "./kimi-config";
+import {
+  detectExistingInstallation,
+  killPortProcess,
+  uninstallGatewayDaemon,
+  uninstallGlobalOpenclaw,
+  findAvailablePort,
+} from "./install-detector";
+import { DEFAULT_PORT } from "./constants";
+interface SetupIpcDeps {
+  setupManager: SetupManager;
+  gateway?: { setPort: (port: number) => void };
+}
+
+let latestSetupCompletedProps: Record<string, string> | null = null;
+
+type SetupActionResult = {
+  success: boolean;
+  message?: string;
+};
+
+// 统一封装 Setup 埋点：started/result 结构固定，避免每个 handler 手写重复逻辑。
+async function runTrackedSetupAction<T extends SetupActionResult>(
+  action: analytics.SetupAction,
+  props: Record<string, unknown>,
+  run: () => Promise<T>,
+): Promise<T> {
+  const startedAt = Date.now();
+  const canTrackStructured =
+    typeof analytics.trackSetupActionStarted === "function" &&
+    typeof analytics.trackSetupActionResult === "function";
+  if (canTrackStructured) {
+    analytics.trackSetupActionStarted(action, props);
+  }
+  try {
+    const result = await run();
+    const latencyMs = Date.now() - startedAt;
+    const errorType = result.success
+      ? undefined
+      : (typeof analytics.classifyErrorType === "function"
+        ? analytics.classifyErrorType(result.message)
+        : "unknown");
+    if (canTrackStructured) {
+      analytics.trackSetupActionResult(action, {
+        success: result.success,
+        latencyMs,
+        errorType,
+        props,
+      });
+    }
+    return result;
+  } catch (err) {
+    const latencyMs = Date.now() - startedAt;
+    const errorType =
+      typeof analytics.classifyErrorType === "function"
+        ? analytics.classifyErrorType(err)
+        : "unknown";
+    if (canTrackStructured) {
+      analytics.trackSetupActionResult(action, {
+        success: false,
+        latencyMs,
+        errorType,
+        props,
+      });
+    }
+    throw err;
+  }
+}
+
+// 注册 Setup 相关 IPC
+export function registerSetupIpc(deps: SetupIpcDeps): void {
+  const { setupManager } = deps;
+
+  // ── 环境检测：检查已有 OpenClaw 安装 ──
+  ipcMain.handle("setup:detect-installation", async () => {
+    try {
+      const result = await detectExistingInstallation();
+      return { success: true, data: result };
+    } catch (err: any) {
+      log.error(`[setup] environment detection failed: ${err?.message ?? err}`);
+      return { success: true, data: { portInUse: false, portProcess: "", portPid: 0, globalInstalled: false, globalPath: "" } };
+    }
+  });
+
+  // ── 冲突处理：卸载旧版或修改端口 ──
+  ipcMain.handle("setup:resolve-conflict", async (_event, params: { action: "uninstall" | "change-port"; pid?: number }) => {
+    const { action, pid } = params;
+    try {
+      if (action === "uninstall") {
+        // 顺序：① 卸载系统守护进程（停止 launchd/schtasks 的自动重启）
+        //       ② 杀掉残留进程（守护进程卸载后不会再被拉起）
+        //       ③ 卸载 npm 全局包
+        await uninstallGatewayDaemon();
+        if (pid && pid > 0) {
+          await killPortProcess(pid);
+        }
+        await uninstallGlobalOpenclaw();
+        // 保留 ~/.openclaw/：聊天记录、项目数据都在里面
+        log.info("[setup] legacy OpenClaw uninstalled");
+        return { success: true };
+      }
+
+      if (action === "change-port") {
+        const newPort = await findAvailablePort(DEFAULT_PORT + 1);
+        const config = readUserConfig();
+        config.gateway ??= {};
+        config.gateway.port = newPort;
+        writeUserConfig(config);
+        deps.gateway?.setPort(newPort);
+        log.info(`[setup] port conflict resolved, switched to port ${newPort}`);
+        return { success: true, port: newPort };
+      }
+
+      return { success: false, message: "未知操作" };
+    } catch (err: any) {
+      log.error(`[setup] conflict resolution failed: ${err?.message ?? err}`);
+      return { success: false, message: err?.message ?? String(err) };
+    }
+  });
+
+  // ── 读取系统开机启动状态（Setup Step 3 开关回填） ──
+  ipcMain.handle("setup:get-launch-at-login", async () => {
+    try {
+      return {
+        success: true,
+        data: getLaunchAtLoginState(app),
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message || String(err) };
+    }
+  });
+
+  // ── 验证 API Key ──
+  ipcMain.handle("setup:verify-key", async (_event, params) => {
+    const provider = typeof params?.provider === "string" ? params.provider : "";
+    return runTrackedSetupAction("verify_key", { provider }, async () => verifyProvider(params));
+  });
+
+  // ── 保存配置到 ~/.openclaw/openclaw.json ──
+  ipcMain.handle("setup:save-config", async (_event, params) => {
+    const {
+      provider,
+      apiKey,
+      modelID,
+      baseURL,
+      api,
+      subPlatform,
+      supportImage,
+      customPreset,
+    } = params;
+    const trackedProps = {
+      provider,
+      model: modelID,
+      sub_platform: subPlatform || undefined,
+      custom_preset: customPreset || undefined,
+    };
+    return runTrackedSetupAction("save_config", trackedProps, async () => {
+      try {
+        // 读取现有配置
+        const config = readUserConfig();
+
+        // 初始化嵌套结构
+        config.models ??= {};
+        config.models.providers ??= {};
+        config.agents ??= {};
+        config.agents.defaults ??= {};
+        config.agents.defaults.model ??= {};
+
+        // Moonshot 子平台需要特殊处理
+        if (provider === "moonshot") {
+          saveMoonshotConfig(config, apiKey, modelID, subPlatform);
+          // 配置 kimi-code 时自动启用搜索插件
+          if (subPlatform === "kimi-code") {
+            saveKimiSearchConfig(config, { enabled: true });
+          }
+        } else {
+          // 内置预设命中时，使用预设的 providerKey 作为配置键
+          const customPre = customPreset ? CUSTOM_PROVIDER_PRESETS[customPreset] : undefined;
+          const configKey = customPre ? customPre.providerKey : provider;
+
+          // 构造 provider 配置
+          const providerConfig = buildProviderConfig(provider, apiKey, modelID, baseURL, api, supportImage, customPreset);
+          config.models.providers[configKey] = providerConfig;
+          config.agents.defaults.model.primary = `${configKey}/${modelID}`;
+        }
+
+        // 统一 gateway 鉴权配置：local 模式 + 持久化 token（单一真相源）
+        config.gateway ??= {};
+        config.gateway.mode = "local";
+        ensureGatewayAuthTokenInConfig(config);
+
+        // 默认使用独立浏览器实例，免去用户手动安装 Chrome 扩展
+        config.browser ??= {};
+        config.browser.defaultProfile = "openclaw";
+
+        // 显式禁用 iMessage 频道（openclaw 默认启用，会因 macOS 权限拒绝产生大量错误日志）
+        config.channels ??= {};
+        config.channels.imessage ??= {};
+        config.channels.imessage.enabled = false;
+
+        // 禁止 gateway 自行检查 npm 更新（AivoClaw 整包打包，用户无法独立更新 gateway）
+        config.update ??= {};
+        config.update.checkOnStart = false;
+
+        // 开箱即用：显式启用全部工具（openclaw 2026.3.2 起默认 messaging，只有消息类工具）
+        config.tools ??= {};
+        config.tools.profile = "full";
+
+        // Step 2 不写 wizard，避免生成 schema 未识别字段。
+        // Setup 完成标记仅在 Step 3（Gateway 成功启动）后写入 wizard.lastRunAt。
+        delete config.wizard;
+
+        writeUserConfig(config);
+        // 配置落盘成功后再缓存埋点上下文，避免失败时污染事件参数。
+        latestSetupCompletedProps = buildSetupCompletedProps(params, config);
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, message: err.message || String(err) };
+      }
+    });
+  });
+
+  // ── Setup 完成（Gateway 启动 + 窗口切换由 setOnComplete 回调统一处理） ──
+  ipcMain.handle("setup:complete", async (_event, params?: { installCli?: boolean; launchAtLogin?: boolean; sessionMemory?: boolean }) => {
+    const launchAtLogin = typeof params?.launchAtLogin === "boolean" ? params.launchAtLogin : undefined;
+    const sessionMemory = params?.sessionMemory !== false;
+    return runTrackedSetupAction("complete", { launch_at_login: launchAtLogin, session_memory: sessionMemory }, async () => {
+      if (typeof launchAtLogin === "boolean") {
+        setLaunchAtLoginEnabled(app, launchAtLogin);
+      }
+
+      // 写入 session-memory hook 配置
+      try {
+        const config = readUserConfig();
+        config.hooks ??= {};
+        config.hooks.internal = {
+          enabled: true,
+          entries: {
+            ...config.hooks.internal?.entries,
+            "session-memory": { enabled: sessionMemory },
+          },
+        };
+        writeUserConfig(config);
+      } catch (err: any) {
+        log.error(`[setup] failed to write hooks config: ${err?.message ?? err}`);
+      }
+
+      const ok = await setupManager.complete();
+      if (!ok) {
+        return {
+          success: false,
+          message: "Gateway 启动超时或失败，请稍后重试。",
+        };
+      }
+
+      analytics.track("setup_completed", latestSetupCompletedProps ?? {});
+
+      // CLI 开关显式持久化：开启则安装，关闭则清理，失败都不阻塞 Setup。
+      if (params?.installCli !== false) {
+        const cliResult = await installCli();
+        if (cliResult.success) {
+          analytics.track("cli_installed", { method: "setup_wizard" });
+        } else {
+          log.error(`[setup] CLI install failed: ${cliResult.message}`);
+          analytics.track("cli_install_failed", { error: cliResult.message });
+        }
+      } else {
+        const cliResult = await uninstallCli();
+        if (!cliResult.success) {
+          log.error(`[setup] CLI uninstall failed: ${cliResult.message}`);
+          analytics.track("cli_uninstall_failed", { error: cliResult.message });
+        }
+      }
+
+      return { success: true };
+    });
+  });
+}
+
+// 将 setup 表单参数转换为 setup_completed 事件需要的属性字段。
+function buildSetupCompletedProps(params: {
+  provider: string;
+  modelID: string;
+  baseURL?: string;
+  subPlatform?: string;
+}, config?: any): Record<string, string> {
+  const { provider, modelID, baseURL, subPlatform } = params;
+
+  // Moonshot 子平台用实际写入的 providerKey 查配置
+  const sub = subPlatform ? MOONSHOT_SUB_PLATFORMS[subPlatform] : undefined;
+  const effectiveKey = sub?.providerKey ?? provider;
+  const configBaseUrl = config?.models?.providers?.[effectiveKey]?.baseUrl;
+  const rawBaseUrl =
+    typeof configBaseUrl === "string"
+      ? configBaseUrl
+      : (sub?.baseUrl ?? PROVIDER_PRESETS[provider]?.baseUrl ?? baseURL ?? "");
+
+  return {
+    provider,
+    model: modelID,
+    base_url: rawBaseUrl.trim().replace(/\/+$/, ""),
+  };
+}

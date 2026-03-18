@@ -1,0 +1,54 @@
+# 上游依赖（各自独立 git 仓库）
+upstream/
+
+# 内部文档（独立仓库）
+aivoclaw-docs/
+
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+out/
+*.tsbuildinfo
+
+# Chat UI 构建产物和依赖
+chat-ui/dist/
+chat-ui/ui/node_modules/
+
+# 打包时生成的运行时资源
+resources/runtime/
+resources/gateway/
+resources/app-icon.png
+resources/targets/
+
+# 系统缓存
+.DS_Store
+
+# 下载缓存
+.cache/
+
+# 本地工具（含埋点接收服务）
+tools/
+
+# 签名密钥与本地环境变量（绝对不能提交）
+.env
+private_keys/
+
+.gemini-clipboard/
+
+.git/
+.worktrees/
+temp/
+tsconfig.tsbuildinfo
+
+# 上游依赖（各自独立 git 仓库）
+docs/tihuan1.md
+docs/tihuan2.md
+nul
+_staging/
+
+CLAUDE.md
+.claude
+docs
+package-lock.json

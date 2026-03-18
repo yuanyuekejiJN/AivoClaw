@@ -1,0 +1,826 @@
+// ============================================
+// AivoClaw Setup — 三步向导交互逻辑
+// ============================================
+
+(function () {
+  "use strict";
+
+  // ---- Provider 预设配置 ----
+  const PROVIDERS = {
+    anthropic: {
+      placeholder: "sk-ant-...",
+      platformUrl: "https://console.anthropic.com?utm_source=aivoclaw",
+      models: [
+        "claude-sonnet-4-6",
+        "claude-opus-4-6",
+        "claude-sonnet-4-5-20250929",
+        "claude-opus-4-5-20251101",
+        "claude-haiku-4-5-20251001",
+      ],
+    },
+    moonshot: {
+      placeholder: "sk-...",
+      models: ["kimi-k2.5", "kimi-k2-0905-preview"],
+      hasSubPlatform: true,
+    },
+    openai: {
+      placeholder: "sk-...",
+      platformUrl: "https://platform.openai.com?utm_source=aivoclaw",
+      models: ["gpt-5.4", "gpt-5.2", "gpt-5.2-codex"],
+    },
+    google: {
+      placeholder: "AI...",
+      platformUrl: "https://aistudio.google.com?utm_source=aivoclaw",
+      models: ["gemini-3.1-pro", "gemini-3.1-flash", "gemini-3-pro-preview", "gemini-3-flash-preview"],
+    },
+    custom: {
+      placeholder: "",
+      models: [],
+    },
+  };
+
+  // Moonshot 子平台各自的 URL
+  const SUB_PLATFORM_URLS = {
+    "moonshot-cn": "https://platform.moonshot.cn?utm_source=aivoclaw",
+    "moonshot-ai": "https://platform.moonshot.ai?utm_source=aivoclaw",
+    "kimi-code": "https://kimi.com/code?utm_source=aivoclaw",
+  };
+
+  // Kimi Code 子平台使用独立模型列表
+  const KIMI_CODE_MODELS = ["k2p5"];
+
+  // Custom tab 内置预设
+  const CUSTOM_PRESETS = {
+    "minimax": {
+      providerKey: "minimax",
+      placeholder: "eyJ...",
+      models: ["MiniMax-M2.5", "MiniMax-M2.5-highspeed"],
+    },
+    "minimax-cn": {
+      providerKey: "minimax-cn",
+      placeholder: "eyJ...",
+      models: ["MiniMax-M2.5", "MiniMax-M2.5-highspeed"],
+    },
+    "zai-global": {
+      providerKey: "zai",
+      placeholder: "...",
+      models: ["glm-5", "glm-4.7", "glm-4.7-flash", "glm-4.7-flashx"],
+    },
+    "zai-cn": {
+      providerKey: "zai",
+      placeholder: "...",
+      models: ["glm-5", "glm-4.7", "glm-4.7-flash", "glm-4.7-flashx"],
+    },
+    "zai-cn-coding": {
+      providerKey: "zai",
+      placeholder: "...",
+      models: ["glm-5", "glm-4.7", "glm-4.7-flash", "glm-4.7-flashx"],
+    },
+    "volcengine": {
+      providerKey: "volcengine",
+      placeholder: "...",
+      models: ["doubao-seed-1-8-251228", "doubao-seed-code-preview-251028", "deepseek-v3-2-251201"],
+    },
+    "volcengine-coding": {
+      providerKey: "volcengine",
+      placeholder: "...",
+      models: ["doubao-seed-1-8-251228", "doubao-seed-code-preview-251028", "deepseek-v3-2-251201"],
+    },
+    "qwen": {
+      providerKey: "qwen",
+      placeholder: "sk-...",
+      models: ["qwen-coder-plus-latest", "qwen-plus-latest", "qwen-max-latest", "qwen-turbo-latest"],
+    },
+    "qwen-coding": {
+      providerKey: "qwen",
+      placeholder: "sk-sp-...",
+      models: ["qwen3.5-plus", "kimi-k2.5", "glm-5", "MiniMax-M2.5",],
+    },
+  };
+
+  // ---- 国际化文案 ----
+  const I18N = {
+    en: {
+      title: "AivoClaw Setup",
+      "welcome.title": "Welcome to AivoClaw",
+      "welcome.subtitle": "AivoClaw is a one-click installer for OpenClaw. Ready to use out of the box.",
+      "welcome.feat1": "Chat with top language models like Claude, GPT, Kimi, Gemini",
+      "welcome.feat2": "Follow instructions to access files on your computer and automate tasks",
+      "welcome.feat3": "Connect to Feishu, WeCom, DingTalk, QQ Bot",
+      "welcome.security": "API keys stored locally, never sent to third-party servers",
+      "welcome.next": "Next",
+      "config.title": "Configure Provider",
+      "config.subtitle": "Choose your LLM provider and enter your API key.",
+      "config.keyNotice": "AivoClaw does not provide API keys. Please click the link to purchase one from the provider's website.",
+      "config.platform": "Platform",
+      "config.baseUrl": "Base URL",
+      "config.apiKey": "API Key",
+      "config.getKey": "Get API Key →",
+      "config.getKey.kimi-code": "Get Key (Kimi for Code) →",
+      "config.getKey.moonshot-cn": "Get Key (Moonshot.cn) →",
+      "config.getKey.moonshot-ai": "Get Key (Moonshot.ai) →",
+      "config.model": "Model",
+      "config.modelId": "Model ID",
+      "config.apiType": "API Type",
+      "config.preset": "Preset",
+      "config.presetManual": "Manual",
+      "config.customModelId": "Custom Model ID",
+      "config.customModelOption": "Custom Model…",
+      "config.custom": "Custom",
+      "config.docsLink": "Tutorial Docs →",
+      "config.back": "Back",
+      "config.verify": "Verify & Continue",
+      "config.imageSupport": "Model supports image input",
+      "done.title": "All Set!",
+      "done.subtitle": "AivoClaw is ready. Here's what you can do:",
+      "done.feature1": "Chat with state-of-the-art language models",
+      "done.feature2": "Generate and execute code in real time",
+      "done.feature3": "Manage multiple conversations and contexts",
+      "done.feature4": "Switch providers or models anytime in Settings",
+      "done.sessionMemory": "Auto-save session memory on /new",
+      "done.launchAtLogin": "Launch at login",
+      "done.installCli": "Add openclaw command to terminal PATH",
+      "done.start": "Start AivoClaw",
+      "done.starting": "Starting Gateway…",
+      "done.startFailed": "Gateway failed to start. Please click Start AivoClaw to retry.",
+      "conflict.title": "Existing OpenClaw Detected",
+      "conflict.subtitle": "An existing OpenClaw installation was found on your system. This may cause port conflicts with AivoClaw.",
+      "conflict.reassure": "Your personas and chat history will be preserved.",
+      "conflict.portInUse": "Port {port} is in use by process: {process} (PID: {pid})",
+      "conflict.globalInstalled": "Global installation found: {path}",
+      "conflict.uninstall": "Uninstall old version & continue",
+      "conflict.quit": "Quit",
+      "conflict.uninstalling": "Uninstalling…",
+      "conflict.failed": "Operation failed: ",
+      "error.noKey": "Please enter your API key.",
+      "error.noBaseUrl": "Please enter the Base URL.",
+      "error.noModelId": "Please enter the Model ID.",
+      "error.verifyFailed": "Verification failed. Please check your API key.",
+      "error.connection": "Connection error: ",
+    },
+    zh: {
+      title: "AivoClaw 安装引导",
+      "welcome.title": "欢迎使用 AivoClaw",
+      "welcome.subtitle": "AivoClaw 是 OpenClaw 的一键安装包，开箱即用。",
+      "welcome.feat1": "支持 Claude、GPT、Kimi、Gemini 等主流大语言模型",
+      "welcome.feat2": "遵循指令访问电脑上的文件，自动执行各种办公任务",
+      "welcome.feat3": "连接飞书、企业微信、钉钉、QQ 机器人",
+      "welcome.security": "API 密钥安全存储在本地，绝不会发送到任何第三方服务器",
+      "welcome.next": "下一步",
+      "config.title": "配置服务商",
+      "config.subtitle": "选择 LLM 服务商并输入 API 密钥。",
+      "config.keyNotice": "AivoClaw 不提供 API 密钥，请点击链接前往服务商官网购买 API 密钥后使用。",
+      "config.platform": "平台",
+      "config.baseUrl": "接口地址",
+      "config.apiKey": "API 密钥",
+      "config.getKey": "获取密钥 →",
+      "config.getKey.kimi-code": "购买会员获取密钥 (Kimi for Code) →",
+      "config.getKey.moonshot-cn": "获取密钥 (Moonshot.cn) →",
+      "config.getKey.moonshot-ai": "获取密钥 (Moonshot.ai) →",
+      "config.model": "模型",
+      "config.modelId": "模型 ID",
+      "config.apiType": "接口类型",
+      "config.preset": "预设",
+      "config.presetManual": "手动配置",
+      "config.customModelId": "自定义模型 ID",
+      "config.customModelOption": "自定义模型…",
+      "config.custom": "自定义",
+      "config.docsLink": "教程文档 →",
+      "config.back": "返回",
+      "config.verify": "验证并继续",
+      "config.imageSupport": "模型支持图片输入",
+      "done.title": "配置完成！",
+      "done.subtitle": "AivoClaw 已就绪，你可以：",
+      "done.feature1": "与最先进的大语言模型对话",
+      "done.feature2": "实时生成并执行代码",
+      "done.feature3": "管理多个对话和上下文",
+      "done.feature4": "随时在设置中切换服务商或模型",
+      "done.sessionMemory": "开新对话时自动保存会话记忆",
+      "done.launchAtLogin": "开机启动",
+      "done.installCli": "将 openclaw 命令添加到终端 PATH",
+      "done.start": "启动 AivoClaw",
+      "done.starting": "正在启动 Gateway…",
+      "done.startFailed": 'Gateway 启动失败，请点击"启动 AivoClaw"重试。',
+      "conflict.title": "检测到已安装的 OpenClaw",
+      "conflict.subtitle": "系统中已存在 OpenClaw 安装，可能与 AivoClaw 产生端口冲突。",
+      "conflict.reassure": "你的人设和聊天记录将会被保留。",
+      "conflict.portInUse": "端口 {port} 被占用，进程: {process} (PID: {pid})",
+      "conflict.globalInstalled": "全局安装路径: {path}",
+      "conflict.uninstall": "卸载旧版并继续",
+      "conflict.quit": "退出",
+      "conflict.uninstalling": "正在卸载…",
+      "conflict.failed": "操作失败：",
+      "error.noKey": "请输入 API 密钥。",
+      "error.noBaseUrl": "请输入接口地址。",
+      "error.noModelId": "请输入模型 ID。",
+      "error.verifyFailed": "验证失败，请检查 API 密钥。",
+      "error.connection": "连接错误：",
+    },
+  };
+
+  // ---- DOM 引用 ----
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  const els = {
+    progressFill: $("#progressFill"),
+    steps: $$(".step"),
+    // Step 1
+    btnToStep2: $("#btnToStep2"),
+    // Step 2
+    providerTabs: $("#providerTabs"),
+    platformLink: $("#platformLink"),
+    docsLink: $("#docsLink"),
+    subPlatformGroup: $("#subPlatformGroup"),
+    baseURLGroup: $("#baseURLGroup"),
+    apiKeyInput: $("#apiKey"),
+    btnToggleKey: $("#btnToggleKey"),
+    modelSelectGroup: $("#modelSelectGroup"),
+    modelSelect: $("#modelSelect"),
+    modelInputGroup: $("#modelInputGroup"),
+    modelInput: $("#modelInput"),
+    apiTypeGroup: $("#apiTypeGroup"),
+    imageSupportGroup: $("#imageSupportGroup"),
+    imageSupport: $("#imageSupport"),
+    customPresetGroup: $("#customPresetGroup"),
+    customPreset: $("#customPreset"),
+    customModelInputGroup: $("#customModelInputGroup"),
+    customModelInput: $("#customModelInput"),
+    errorMsg: $("#errorMsg"),
+    btnBackToStep1: $("#btnBackToStep1"),
+    btnVerify: $("#btnVerify"),
+    btnVerifyText: $("#btnVerify .btn-text"),
+    btnVerifySpinner: $("#btnVerify .btn-spinner"),
+    // Step 0 — 冲突检测
+    conflictDetails: $("#conflictDetails"),
+    conflictPort: $("#conflictPort"),
+    conflictPortText: $("#conflictPortText"),
+    conflictGlobal: $("#conflictGlobal"),
+    conflictGlobalText: $("#conflictGlobalText"),
+    conflictError: $("#conflictError"),
+    btnUninstall: $("#btnUninstall"),
+    btnUninstallText: document.querySelector("#btnUninstall .btn-text"),
+    btnUninstallSpinner: document.querySelector("#btnUninstall .btn-spinner"),
+    btnQuitConflict: $("#btnQuitConflict"),
+    conflictStatus: $("#conflictStatus"),
+    // Step 3 — 完成
+    sessionMemoryEnabled: $("#sessionMemoryEnabled"),
+    installCliCheck: $("#installCliCheck"),
+    btnStart: $("#btnStart"),
+    btnStartText: $("#btnStart .btn-text"),
+    btnStartSpinner: $("#btnStartSpinner"),
+    doneStatus: $("#doneStatus"),
+    launchAtLoginRow: $("#launchAtLoginRow"),
+    launchAtLoginEnabled: $("#launchAtLoginEnabled"),
+  };
+
+  // ---- 状态 ----
+  let currentStep = 1;
+  let currentProvider = "moonshot";
+  let verifying = false;
+  let starting = false;
+  let currentLang = "en";
+  let launchAtLoginSupported = false;
+  let detectionResult = null;
+  let resolving = false;
+
+  // ---- 语言检测（从 URL ?lang= 参数读取） ----
+  function detectLang() {
+    const params = new URLSearchParams(window.location.search);
+    const lang = params.get("lang");
+    currentLang = lang && I18N[lang] ? lang : "en";
+  }
+
+  // 翻译取值
+  function t(key) {
+    return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+  }
+
+  // 遍历 data-i18n 属性，替换文本
+  function applyI18n() {
+    document.title = t("title");
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      el.textContent = t(el.getAttribute("data-i18n"));
+    });
+  }
+
+  // ---- 步骤切换 ----
+  function goToStep(step) {
+    currentStep = step;
+    // Step 0 不算进度条，进度条从 Step 1 开始
+    if (step === 0) {
+      els.progressFill.style.width = "0%";
+    } else {
+      els.progressFill.style.width = `${Math.round(step * 100 / 3)}%`;
+    }
+
+    // steps NodeList 顺序: step0(index=0), step1(index=1), step2(index=2), step3(index=3)
+    els.steps.forEach((el, i) => {
+      el.classList.toggle("active", i === step);
+    });
+  }
+
+  // ---- 获取当前 Moonshot 子平台 ----
+  function getSubPlatform() {
+    const checked = document.querySelector('input[name="subPlatform"]:checked');
+    return checked ? checked.value : "kimi-code";
+  }
+
+  // ---- 环境检测（Step 0） ----
+
+  // 检查系统中是否已有 OpenClaw 安装
+  async function checkExistingInstallation() {
+    if (!window.aivoclaw?.detectInstallation) {
+      goToStep(1);
+      return;
+    }
+    try {
+      const res = await window.aivoclaw.detectInstallation();
+      if (!res?.success || !res.data) {
+        goToStep(1);
+        return;
+      }
+      detectionResult = res.data;
+      const hasConflict = detectionResult.portInUse || detectionResult.globalInstalled;
+      if (!hasConflict) {
+        goToStep(1);
+        return;
+      }
+      // 展示冲突详情
+      if (detectionResult.portInUse) {
+        els.conflictPortText.textContent = t("conflict.portInUse")
+          .replace("{port}", "18789")
+          .replace("{process}", detectionResult.portProcess || "unknown")
+          .replace("{pid}", String(detectionResult.portPid || "?"));
+        els.conflictPort.classList.remove("hidden");
+      }
+      if (detectionResult.globalInstalled) {
+        els.conflictGlobalText.textContent = t("conflict.globalInstalled")
+          .replace("{path}", detectionResult.globalPath || "openclaw");
+        els.conflictGlobal.classList.remove("hidden");
+      }
+      goToStep(0);
+    } catch {
+      // 检测失败不阻断流程
+      goToStep(1);
+    }
+  }
+
+  // 卸载旧版
+  async function handleUninstall() {
+    if (resolving) return;
+    resolving = true;
+    setConflictBtnState(els.btnUninstall, els.btnUninstallText, els.btnUninstallSpinner, true, t("conflict.uninstalling"));
+    els.btnQuitConflict.disabled = true;
+    hideConflictError();
+
+    try {
+      const res = await window.aivoclaw.resolveConflict({
+        action: "uninstall",
+        pid: detectionResult?.portPid || 0,
+      });
+      if (res?.success) {
+        goToStep(1);
+      } else {
+        showConflictError(t("conflict.failed") + (res?.message || ""));
+      }
+    } catch (err) {
+      showConflictError(t("conflict.failed") + (err.message || ""));
+    } finally {
+      resolving = false;
+      setConflictBtnState(els.btnUninstall, els.btnUninstallText, els.btnUninstallSpinner, false, t("conflict.uninstall"));
+      els.btnQuitConflict.disabled = false;
+    }
+  }
+
+  // 退出应用
+  function handleQuitConflict() {
+    window.close();
+  }
+
+  // 冲突页按钮状态控制
+  function setConflictBtnState(btn, textEl, spinnerEl, loading, text) {
+    btn.disabled = loading;
+    textEl.textContent = text;
+    spinnerEl.classList.toggle("hidden", !loading);
+  }
+
+  function showConflictError(msg) {
+    els.conflictError.textContent = msg;
+    els.conflictError.classList.remove("hidden");
+  }
+
+  function hideConflictError() {
+    els.conflictError.classList.add("hidden");
+    els.conflictError.textContent = "";
+  }
+
+  // ---- Provider 切换 ----
+  function switchProvider(provider) {
+    currentProvider = provider;
+    const config = PROVIDERS[provider];
+
+    $$(".provider-tab").forEach((tab) => {
+      tab.classList.toggle("active", tab.dataset.provider === provider);
+    });
+
+    els.apiKeyInput.placeholder = config.placeholder;
+    els.apiKeyInput.value = "";
+    hideError();
+    updatePlatformLink();
+    toggleEl(els.subPlatformGroup, config.hasSubPlatform === true);
+
+    const isCustom = provider === "custom";
+    // 预设下拉仅 Custom tab 显示
+    toggleEl(els.customPresetGroup, isCustom);
+
+    if (isCustom) {
+      els.customPreset.value = "";
+      applyCustomPreset("");
+    } else {
+      toggleEl(els.baseURLGroup, false);
+      toggleEl(els.modelInputGroup, false);
+      toggleEl(els.apiTypeGroup, false);
+      toggleEl(els.imageSupportGroup, false);
+      toggleEl(els.customModelInputGroup, false);
+      toggleEl(els.modelSelectGroup, true);
+      updateModels();
+    }
+  }
+
+  // 自定义 Model ID 哨兵值（下拉最后一项）
+  const CUSTOM_MODEL_SENTINEL = "__custom__";
+
+  // 根据预设切换 Custom tab 的字段显隐
+  function applyCustomPreset(presetKey) {
+    const preset = CUSTOM_PRESETS[presetKey];
+
+    if (preset) {
+      // 预设模式：隐藏手动字段，显示模型下拉
+      toggleEl(els.baseURLGroup, false);
+      toggleEl(els.apiTypeGroup, false);
+      toggleEl(els.imageSupportGroup, false);
+      toggleEl(els.modelInputGroup, false);
+      toggleEl(els.modelSelectGroup, true);
+      toggleEl(els.customModelInputGroup, false);
+
+      els.apiKeyInput.placeholder = preset.placeholder;
+      els.customModelInput.value = "";
+      populatePresetModels(preset.models);
+      updatePlatformLink();
+    } else {
+      // 手动模式：恢复原始 Custom 行为
+      toggleEl(els.baseURLGroup, true);
+      toggleEl(els.apiTypeGroup, true);
+      toggleEl(els.imageSupportGroup, true);
+      toggleEl(els.modelInputGroup, true);
+      toggleEl(els.modelSelectGroup, false);
+      toggleEl(els.customModelInputGroup, false);
+
+      els.apiKeyInput.placeholder = "";
+      updatePlatformLink();
+    }
+  }
+
+  // 填充预设模型列表，末尾追加"自定义模型"选项
+  function populatePresetModels(models) {
+    populateModels(models);
+    const opt = document.createElement("option");
+    opt.value = CUSTOM_MODEL_SENTINEL;
+    opt.textContent = t("config.customModelOption");
+    els.modelSelect.appendChild(opt);
+  }
+
+  // 模型下拉切换时，判断是否显示自定义输入框
+  function handleModelSelectChange() {
+    if (currentProvider !== "custom" || !els.customPreset.value) return;
+    const isCustomModel = els.modelSelect.value === CUSTOM_MODEL_SENTINEL;
+    toggleEl(els.customModelInputGroup, isCustomModel);
+    if (isCustomModel) {
+      els.customModelInput.focus();
+    }
+  }
+
+  // ---- 更新平台链接 ----
+  function updatePlatformLink() {
+    let url = PROVIDERS[currentProvider].platformUrl || "";
+    // Moonshot 子平台各有独立 URL
+    if (currentProvider === "moonshot") {
+      url = SUB_PLATFORM_URLS[getSubPlatform()] || "";
+    }
+    // Custom 预设的平台链接
+    if (currentProvider === "custom") {
+      const preset = CUSTOM_PRESETS[els.customPreset.value];
+      url = preset ? preset.platformUrl : "";
+    }
+    if (url) {
+      // Moonshot 子平台显示带平台名的链接文本
+      var linkKey = currentProvider === "moonshot"
+        ? "config.getKey." + getSubPlatform()
+        : "config.getKey";
+      els.platformLink.textContent = t(linkKey);
+      els.platformLink.dataset.url = url;
+      els.platformLink.classList.remove("hidden");
+    } else {
+      els.platformLink.classList.add("hidden");
+    }
+  }
+
+  // ---- 更新模型列表（Moonshot 子平台会影响列表） ----
+  function updateModels() {
+    const config = PROVIDERS[currentProvider];
+    if (currentProvider === "moonshot" && getSubPlatform() === "kimi-code") {
+      populateModels(KIMI_CODE_MODELS);
+    } else {
+      populateModels(config.models);
+    }
+  }
+
+  // 填充模型下拉选项
+  function populateModels(models) {
+    els.modelSelect.innerHTML = "";
+    models.forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      els.modelSelect.appendChild(opt);
+    });
+  }
+
+  // ---- 密码可见性切换 ----
+  function toggleKeyVisibility() {
+    const input = els.apiKeyInput;
+    const isPassword = input.type === "password";
+    input.type = isPassword ? "text" : "password";
+
+    const eyeOn = els.btnToggleKey.querySelector(".icon-eye");
+    const eyeOff = els.btnToggleKey.querySelector(".icon-eye-off");
+    eyeOn.classList.toggle("hidden", !isPassword);
+    eyeOff.classList.toggle("hidden", isPassword);
+  }
+
+  // ---- 验证并保存配置（Step 2） ----
+  async function handleVerify() {
+    if (verifying) return;
+
+    const apiKey = els.apiKeyInput.value.trim();
+    if (!apiKey) {
+      showError(t("error.noKey"));
+      return;
+    }
+
+    const params = buildParams(apiKey);
+    if (!params) return;
+
+    setVerifying(true);
+    hideError();
+
+    try {
+      const result = await window.aivoclaw.verifyKey(params);
+
+      if (!result.success) {
+        showError(result.message || t("error.verifyFailed"));
+        setVerifying(false);
+        return;
+      }
+
+      await window.aivoclaw.saveConfig(buildSavePayload(params));
+      setVerifying(false);
+      goToStep(3);
+    } catch (err) {
+      showError(t("error.connection") + (err.message || "Unknown error"));
+      setVerifying(false);
+    }
+  }
+
+  // 根据当前表单状态构建验证参数
+  function buildParams(apiKey) {
+    const params = {
+      provider: currentProvider,
+      apiKey,
+    };
+
+    if (currentProvider === "custom") {
+      const presetKey = els.customPreset.value;
+      if (presetKey) {
+        // 预设模式：选了"自定义模型"时用输入框，否则用下拉值
+        if (els.modelSelect.value === CUSTOM_MODEL_SENTINEL) {
+          const customModel = (els.customModelInput.value || "").trim();
+          if (!customModel) {
+            showError(t("error.noModelId"));
+            return null;
+          }
+          params.modelID = customModel;
+        } else {
+          params.modelID = els.modelSelect.value;
+        }
+        params.customPreset = presetKey;
+      } else {
+        // 手动模式
+        const baseURL = ($("#baseURL").value || "").trim();
+        const modelID = (els.modelInput.value || "").trim();
+        if (!baseURL) {
+          showError(t("error.noBaseUrl"));
+          return null;
+        }
+        if (!modelID) {
+          showError(t("error.noModelId"));
+          return null;
+        }
+        params.baseURL = baseURL;
+        params.modelID = modelID;
+        params.apiType = document.querySelector('input[name="apiType"]:checked').value;
+        params.supportImage = els.imageSupport.checked;
+      }
+    } else {
+      params.modelID = els.modelSelect.value;
+    }
+
+    // Moonshot 子平台
+    if (currentProvider === "moonshot") {
+      params.subPlatform = getSubPlatform();
+    }
+
+    return params;
+  }
+
+  // 构建保存配置的 payload
+  function buildSavePayload(params) {
+    return {
+      provider: params.provider,
+      apiKey: params.apiKey,
+      modelID: params.modelID,
+      baseURL: params.baseURL || "",
+      api: params.apiType || "",
+      subPlatform: params.subPlatform || "",
+      supportImage: params.supportImage ?? true,
+      customPreset: params.customPreset || "",
+    };
+  }
+
+  // ---- 完成 Setup ----
+  async function handleComplete() {
+    if (starting) return;
+    setStarting(true);
+    setDoneStatus("");
+
+    try {
+      const payload = {
+        installCli: els.installCliCheck.checked,
+        sessionMemory: !!els.sessionMemoryEnabled.checked,
+      };
+      if (launchAtLoginSupported) {
+        payload.launchAtLogin = !!els.launchAtLoginEnabled.checked;
+      }
+      const result = await window.aivoclaw.completeSetup(payload);
+      if (!result || !result.success) {
+        setStarting(false);
+        setDoneStatus(result?.message || t("done.startFailed"), true);
+      }
+    } catch (err) {
+      setStarting(false);
+      setDoneStatus((err && err.message) || t("done.startFailed"), true);
+    }
+  }
+
+  // 读取系统层开机启动状态并回填 Step 3 开关。
+  async function loadLaunchAtLoginState() {
+    if (!window.aivoclaw?.setupGetLaunchAtLogin) {
+      return;
+    }
+    try {
+      const result = await window.aivoclaw.setupGetLaunchAtLogin();
+      if (!result?.success || !result.data) {
+        return;
+      }
+      launchAtLoginSupported = result.data.supported === true;
+      toggleEl(els.launchAtLoginRow, launchAtLoginSupported);
+      if (launchAtLoginSupported) {
+        // Setup 阶段默认开启开机启动，用户可在此页手动关闭。
+        els.launchAtLoginEnabled.checked = true;
+      }
+    } catch {
+      // 获取失败时不阻断 Setup 流程，保持开关隐藏。
+      launchAtLoginSupported = false;
+    }
+  }
+
+  // ---- UI 辅助 ----
+  function toggleEl(el, show) {
+    el.classList.toggle("hidden", !show);
+  }
+
+  function showError(msg) {
+    els.errorMsg.textContent = msg;
+    els.errorMsg.classList.remove("hidden");
+  }
+
+  function hideError() {
+    els.errorMsg.classList.add("hidden");
+    els.errorMsg.textContent = "";
+  }
+
+  function setVerifying(loading) {
+    verifying = loading;
+    els.btnVerify.disabled = loading;
+    els.btnVerifyText.classList.toggle("hidden", loading);
+    els.btnVerifySpinner.classList.toggle("hidden", !loading);
+  }
+
+  // Step 4 启动状态（等待 Gateway 就绪）
+  function setStarting(loading) {
+    starting = loading;
+    els.btnStart.disabled = loading;
+    if (loading) {
+      els.btnStartText.textContent = t("done.starting");
+      els.btnStartSpinner.classList.remove("hidden");
+    } else {
+      els.btnStartText.textContent = t("done.start");
+      els.btnStartSpinner.classList.add("hidden");
+    }
+  }
+
+  // Step 4 状态提示
+  function setDoneStatus(msg, isError) {
+    if (!msg) {
+      els.doneStatus.classList.add("hidden");
+      els.doneStatus.classList.remove("error");
+      els.doneStatus.textContent = "";
+      return;
+    }
+    els.doneStatus.textContent = msg;
+    els.doneStatus.classList.remove("hidden");
+    els.doneStatus.classList.toggle("error", !!isError);
+  }
+
+  // ---- 事件绑定 ----
+  function bindEvents() {
+    els.btnUninstall.addEventListener("click", handleUninstall);
+    els.btnQuitConflict.addEventListener("click", handleQuitConflict);
+    els.btnToStep2.addEventListener("click", () => goToStep(2));
+    els.btnBackToStep1.addEventListener("click", () => goToStep(1));
+
+    // Provider Tab 切换
+    els.providerTabs.addEventListener("click", (e) => {
+      const tab = e.target.closest(".provider-tab");
+      if (tab) switchProvider(tab.dataset.provider);
+    });
+
+    // Moonshot 子平台切换 → 更新模型列表和平台链接
+    if (els.subPlatformGroup) {
+      els.subPlatformGroup.addEventListener("change", () => {
+        if (currentProvider === "moonshot") {
+          updateModels();
+          updatePlatformLink();
+        }
+      });
+    }
+
+    // Custom 预设切换
+    els.customPreset.addEventListener("change", () => {
+      applyCustomPreset(els.customPreset.value);
+    });
+
+    // 模型下拉切换 → 控制自定义模型输入框显隐
+    els.modelSelect.addEventListener("change", handleModelSelectChange);
+
+    // 平台链接点击 → 用系统浏览器打开
+    els.platformLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      const url = els.platformLink.dataset.url;
+      if (url && window.aivoclaw?.openExternal) {
+        window.aivoclaw.openExternal(url);
+      }
+    });
+
+    // 教程文档链接 → 用系统浏览器打开
+    els.docsLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (window.aivoclaw?.openExternal) {
+        window.aivoclaw.openExternal("https://aivoclaw.cn/docs");
+      }
+    });
+
+    els.btnToggleKey.addEventListener("click", toggleKeyVisibility);
+    els.btnVerify.addEventListener("click", handleVerify);
+
+    els.apiKeyInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleVerify();
+    });
+
+    // Step 3 — 完成
+    els.btnStart.addEventListener("click", handleComplete);
+  }
+
+  // ---- 初始化 ----
+  function init() {
+    detectLang();
+    applyI18n();
+    bindEvents();
+    switchProvider("moonshot");
+    checkExistingInstallation();
+    loadLaunchAtLoginState();
+  }
+
+  init();
+})();

@@ -1,0 +1,58 @@
+appId: com.aivoclaw.app
+productName: AivoClaw
+copyright: Copyright © 2025 AivoClaw
+
+directories:
+  output: out
+
+files:
+  - dist/**/*
+  - chat-ui/dist/**/*
+  - setup/**/*
+  - settings/**/*
+  - assets/**/*
+  - package.json
+
+# afterPack 钩子：绕过 node_modules 剥离，直接注入 resources/ 到 app bundle
+afterPack: ./scripts/afterPack.js
+
+# --- macOS ---
+mac:
+  target:
+    - dmg   # 手动分发
+    - zip   # 自动更新（electron-updater 在 macOS 上要求 zip）
+  icon: assets/icon.icns
+  category: public.app-category.productivity
+  # zip artifactName 含 arch + -mac 后缀，供 electron-updater findFile 按架构匹配
+  # dmg.artifactName 会覆盖 DMG 的命名
+  artifactName: "AivoClaw-${version}-${arch}-mac.${ext}"
+  # 签名身份由 CSC_NAME 环境变量指定（见 .env），避免把证书名写入仓库
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  notarize: true
+
+# 自动更新：指向阿里云 CDN
+publish:
+  provider: generic
+  url: https://aivoclaw.cn/releases/
+
+dmg:
+  sign: false
+  # 关闭 DMG 差分更新元数据，避免生成 .dmg.blockmap
+  writeUpdateInfo: false
+  artifactName: "AivoClaw-${version}-${arch}.${ext}"
+
+# --- Windows ---
+win:
+  target: nsis
+  icon: assets/icon.ico
+
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  # 关闭 NSIS 差分包，避免生成 .exe.blockmap
+  differentialPackage: false
+  artifactName: "AivoClaw-Setup-${version}-${arch}.${ext}"
